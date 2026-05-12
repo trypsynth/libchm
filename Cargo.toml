@@ -1,6 +1,6 @@
 [package]
 name = "libchm"
-version = "0.1.0"
+version = "0.1.1"
 description = "Tiny wrapper around ChmLib with safe-ish helpers."
 edition = "2024"
 license = "MIT"
@@ -10,7 +10,4 @@ repository = "https://github.com/trypsynth/libchm"
 thiserror = "2.0.17"
 
 [build-dependencies]
-bzip2 = "0.6.1"
 cc = "1.2.49"
-tar = "0.4.44"
-ureq = { version = "3.1.4", default-features = false, features = ["rustls"] }
