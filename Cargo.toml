@@ -5,6 +5,8 @@ description = "Tiny wrapper around ChmLib with safe-ish helpers."
 edition = "2024"
 license = "MIT"
 repository = "https://github.com/trypsynth/libchm"
+keywords = ["chm", "chmlib", "parser", "ffi", "ebook"]
+categories = ["api-bindings", "parser-implementations"]
 
 [dependencies]
 thiserror = "2.0.18"

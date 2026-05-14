@@ -1,3 +1,4 @@
+#![warn(clippy::all, clippy::cargo, clippy::nursery, clippy::pedantic)]
 use std::{
 	ffi::{CStr, CString},
 	mem,
@@ -77,6 +78,11 @@ pub struct ChmHandle {
 
 impl ChmHandle {
 	/// Open a CHM file at `path`.
+	///
+	/// # Errors
+	///
+	/// Returns [`ChmError::InvalidPath`] if `path` contains interior null bytes, or
+	/// [`ChmError::OpenFailed`] if the underlying `chm_open` call fails.
 	pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
 		let path_str = path.as_ref().to_string_lossy().to_string();
 		let c_path = CString::new(path_str.as_str()).map_err(|_| ChmError::InvalidPath(path_str.clone()))?;
@@ -90,6 +96,10 @@ impl ChmHandle {
 	}
 
 	/// Enumerate entries using the supplied callback.
+	///
+	/// # Errors
+	///
+	/// Returns [`ChmError::EnumerateFailed`] if the underlying `chm_enumerate` call fails.
 	pub fn enumerate<F>(&mut self, what: c_int, mut callback: F) -> Result<()>
 	where
 		F: FnMut(&ChmUnitInfo) -> bool,
@@ -111,6 +121,13 @@ impl ChmHandle {
 	}
 
 	/// Read an entire file from the archive into memory.
+	///
+	/// # Errors
+	///
+	/// Returns [`ChmError::InvalidPath`] if `path` contains interior null bytes,
+	/// [`ChmError::ResolveFailed`] if the object cannot be found in the archive,
+	/// [`ChmError::LengthOverflow`] if the file length overflows `usize`, or
+	/// [`ChmError::ShortRead`] if fewer bytes than expected were retrieved.
 	pub fn read_file(&mut self, path: &str) -> Result<Vec<u8>> {
 		let c_path = CString::new(path).map_err(|_| ChmError::InvalidPath(path.to_string()))?;
 		unsafe {
