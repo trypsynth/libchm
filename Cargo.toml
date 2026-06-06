@@ -9,5 +9,5 @@ keywords = ["chm", "parser", "lzx", "ebook"]
 categories = ["parser-implementations"]
 
 [dependencies]
+bitflags = "2.13.0"
 thiserror = "2.0.18"
-bitflags  = "2"
