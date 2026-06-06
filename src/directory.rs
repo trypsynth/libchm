@@ -134,9 +134,7 @@ impl Directory {
 	/// Scan a PMGL leaf block for `path`. Returns `Ok(None)` if not found.
 	fn scan_pmgl(&self, buf: &[u8], target: &str) -> Result<Option<Entry>> {
 		let header = parse_pmgl(buf)?;
-		let end = (self.block_len as usize)
-			.checked_sub(header.free_space as usize)
-			.ok_or(ChmError::BadPmgl)?;
+		let end = (self.block_len as usize).checked_sub(header.free_space as usize).ok_or(ChmError::BadPmgl)?;
 		let mut pos = PMGL_HEADER_LEN;
 		while pos < end {
 			let (entry, next_pos) = parse_pmgl_entry(buf, pos)?;
@@ -151,9 +149,7 @@ impl Directory {
 	/// Walk a PMGI index block to find which child block to descend into. Returns the child block index, or -1 if none.
 	fn descend_pmgi(&self, buf: &[u8], target: &str) -> Result<i32> {
 		let header = parse_pmgi(buf)?;
-		let end = (self.block_len as usize)
-			.checked_sub(header.free_space as usize)
-			.ok_or(ChmError::BadPmgi)?;
+		let end = (self.block_len as usize).checked_sub(header.free_space as usize).ok_or(ChmError::BadPmgi)?;
 		let mut pos = PMGI_HEADER_LEN;
 		let mut last_child: i32 = -1;
 		while pos < end {
@@ -179,9 +175,7 @@ impl Directory {
 		while cur >= 0 {
 			self.fetch_block(file, cur, &mut buf)?;
 			let header = parse_pmgl(&buf)?;
-			let end = (self.block_len as usize)
-				.checked_sub(header.free_space as usize)
-				.ok_or(ChmError::BadPmgl)?;
+			let end = (self.block_len as usize).checked_sub(header.free_space as usize).ok_or(ChmError::BadPmgl)?;
 			let mut pos = PMGL_HEADER_LEN;
 			while pos < end {
 				let (pmgl_entry, next_pos) = parse_pmgl_entry(&buf, pos)?;

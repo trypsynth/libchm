@@ -3,7 +3,7 @@
 	clippy::cast_possible_wrap,
 	clippy::cast_sign_loss,
 	clippy::explicit_counter_loop,
-	clippy::too_many_lines,
+	clippy::too_many_lines
 )]
 
 use crate::error::LzxError;
@@ -353,11 +353,8 @@ impl LzxState {
 					}
 					let abs_off = i32::from_le_bytes(output[i + 1..i + 5].try_into().unwrap());
 					if i64::from(abs_off) >= -curpos && abs_off < filesize {
-						let rel_off = if abs_off >= 0 {
-							(i64::from(abs_off) - curpos) as i32
-						} else {
-							abs_off + filesize
-						};
+						let rel_off =
+							if abs_off >= 0 { (i64::from(abs_off) - curpos) as i32 } else { abs_off + filesize };
 						output[i + 1..i + 5].copy_from_slice(&rel_off.to_le_bytes());
 					}
 					i += 5;
