@@ -1,11 +1,3 @@
-#![allow(
-	clippy::cast_possible_truncation,
-	clippy::cast_possible_wrap,
-	clippy::cast_sign_loss,
-	clippy::explicit_counter_loop,
-	clippy::too_many_lines
-)]
-
 use crate::error::LzxError;
 
 const LZX_MIN_MATCH: usize = 2;
@@ -128,10 +120,18 @@ impl LzxState {
 		self.length_len[..LZX_LENGTH_MAXSYMBOLS + LZX_LENTABLE_SAFETY].fill(0);
 	}
 
+	// Remaining casts are bounded by LZX spec invariants:
+	//   - block sizes fit in i32 (LZX blocks ≤ 65535 bytes)
+	//   - window_posn/window_size are u32 → usize (lossless on all ≥32-bit targets)
+	//   - bits.read(N) as u8 with N ≤ 4 (max value 15, fits in u8)
+	//   - this_run bounded by block_remaining (u32) and togo (i32 ≤ 65535)
+	#[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
+	#[allow(clippy::too_many_lines)]
 	pub fn decompress(&mut self, input: &[u8], output: &mut [u8]) -> Result<(), LzxError> {
 		let out_len = output.len();
+		let out_len_i32 = i32::try_from(out_len).map_err(|_| LzxError::DataFormat)?;
 		let mut bits = Bits::new(input);
-		let mut togo = out_len as i32;
+		let mut togo = out_len_i32;
 		if !self.header_read {
 			let k = bits.read(1);
 			let filesize = if k != 0 {
@@ -141,7 +141,7 @@ impl LzxState {
 			} else {
 				0
 			};
-			self.intel_filesize = filesize as i32;
+			self.intel_filesize = filesize.cast_signed();
 			self.header_read = true;
 		}
 		while togo > 0 {
@@ -274,7 +274,8 @@ impl LzxState {
 			if bits.pos > input.len() + 2 || (bits.pos > input.len() && bits.left < 16) {
 				return Err(LzxError::IllegalData);
 			}
-			let this_run = (self.block_remaining as i32).min(togo) as usize;
+			// togo > 0 in this branch, so cast_unsigned is safe; min produces u32 ≤ block_remaining
+			let this_run = self.block_remaining.min(togo.cast_unsigned()) as usize;
 			togo -= this_run as i32;
 			self.block_remaining -= this_run as u32;
 			let wp = self.window_posn as usize;
@@ -360,9 +361,10 @@ impl LzxState {
 					i += 5;
 					curpos += 5;
 				}
-				self.intel_curpos = curpos_start + out_len as i64;
+				// out_len_i32 checked to fit in i32 at entry; i64::from is lossless
+				self.intel_curpos = curpos_start + i64::from(out_len_i32);
 			} else {
-				self.intel_curpos += out_len as i64;
+				self.intel_curpos += i64::from(out_len_i32);
 			}
 		}
 		self.frames_read += 1;
@@ -401,14 +403,15 @@ impl<'a> Bits<'a> {
 					continue;
 				}
 				let w = u32::from(self.src[self.pos]);
-				let shift = 16u32.saturating_sub(self.left as u32);
+				// left is always ≥ 0 here (we only reach this after left < n with n > 0)
+				let shift = 16u32.saturating_sub(self.left.cast_unsigned());
 				self.buf |= w << shift;
 				self.left += 8;
 				self.pos += 1;
 				continue;
 			}
 			let w = u32::from(self.src[self.pos]) | (u32::from(self.src[self.pos + 1]) << 8);
-			let shift = 16u32.saturating_sub(self.left as u32);
+			let shift = 16u32.saturating_sub(self.left.cast_unsigned());
 			self.buf |= w << shift;
 			self.left += 16;
 			self.pos += 2;
@@ -417,12 +420,14 @@ impl<'a> Bits<'a> {
 
 	#[inline]
 	const fn peek(&self, n: i32) -> u32 {
-		self.buf >> (32 - n as u32)
+		// n is always a small positive count (1–16); cast_unsigned is safe
+		self.buf >> (32 - n.cast_unsigned())
 	}
 
 	#[inline]
 	const fn remove(&mut self, n: i32) {
-		self.buf = self.buf.wrapping_shl(n as u32);
+		// n is always a small positive count (1–16); cast_unsigned is safe
+		self.buf = self.buf.wrapping_shl(n.cast_unsigned());
 		self.left -= n;
 	}
 
@@ -434,6 +439,8 @@ impl<'a> Bits<'a> {
 		v
 	}
 
+	// tablebits is always ≤ LZX_MAINTREE_TABLEBITS (12): fits in both i32 and u32
+	#[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
 	fn read_huffsym(
 		&mut self,
 		table: &[u16],
@@ -467,6 +474,12 @@ impl<'a> Bits<'a> {
 	}
 }
 
+// Remaining casts are bounded by construction:
+//   - sym < nsyms ≤ LZX_MAINTREE_MAXSYMBOLS (656) — fits in u16
+//   - next_symbol < table.len() / 2 (guarded by the ns2+1 check) — fits in u16
+//   - pos/table_mask ≤ 1<<nbits ≤ 1<<16 — fits in u32
+//   - bit_mask ≤ 1<<15 — fits in u32
+#[allow(clippy::cast_possible_truncation)]
 fn make_decode_table(nsyms: usize, nbits: usize, lengths: &[u8], table: &mut [u16]) -> Result<(), LzxError> {
 	let table_mask = 1usize << nbits;
 	let mut bit_mask = table_mask >> 1;
@@ -537,6 +550,12 @@ fn make_decode_table(nsyms: usize, nbits: usize, lengths: &[u8], table: &mut [u1
 	Ok(())
 }
 
+// Remaining casts are bounded by construction:
+//   - bits.read(N) as u8 with N ≤ 4: max value 15, fits in u8
+//   - bits.read(N) as usize: u32 → usize (lossless on all ≥32-bit platforms)
+//   - z/sym as i32: values ≤ LZX_PRETREE_MAXSYMBOLS (20), fit in i32
+//   - .rem_euclid(17) as u8: result in [0, 16], fits in u8
+#[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
 fn read_lens(
 	bits: &mut Bits,
 	pretree_len: &mut [u8],
@@ -577,7 +596,12 @@ fn read_lens(
 	Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
+// Remaining casts are bounded by construction:
+//   - main_element < LZX_NUM_CHARS (256) when cast to u8
+//   - aligned_bits < LZX_ALIGNED_MAXSYMBOLS (8) when cast to u32
+//   - wp/ws < window_size ≤ 2^21 when cast to i64 for back-reference arithmetic
+//   - .rem_euclid(ws) result < ws ≤ 2^21, fits in usize
+#[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap, clippy::too_many_arguments)]
 fn decode_matches(
 	bits: &mut Bits,
 	window: &mut [u8],
@@ -654,12 +678,11 @@ fn decode_matches(
 			if match_offset == 0 {
 				return Err(LzxError::IllegalData);
 			}
-			let mut src_i = wp as i64 - i64::from(match_offset);
+			// src_i == wp - match_offset at every iteration, so no separate counter is needed
 			for _ in 0..match_length {
-				let s = src_i.rem_euclid(ws as i64) as usize;
+				let s = (wp as i64 - i64::from(match_offset)).rem_euclid(ws as i64) as usize;
 				window[wp] = window[s];
 				wp += 1;
-				src_i += 1;
 			}
 			this_run = this_run.saturating_sub(match_length);
 		}
