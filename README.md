@@ -27,6 +27,10 @@ fn main() -> libchm::Result<()> {
 
 `EntrySel` is a bitflag that filters by category (`NORMAL`, `SPECIAL`, `META`) and kind (`FILES`, `DIRS`). Use `EntrySel::ALL` to get everything or combine flags as needed.
 
+## Bindings
+
+- [pychmrs](https://github.com/joshuashaffer/pychmrs) — Python wrapper
+
 ## License
 
 MIT
