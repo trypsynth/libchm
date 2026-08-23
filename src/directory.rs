@@ -31,26 +31,38 @@ bitflags! {
 	}
 }
 
+/// Whether an [`Entry`] is a file or a directory, based on whether its path ends with `/`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EntryKind {
+	/// A regular file entry.
 	File,
+	/// A directory entry (its path ends with `/`).
 	Dir,
 }
 
+/// Which part of the CHM namespace an [`Entry`] belongs to, based on its path.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EntryCategory {
+	/// A user-visible entry: path starts with `/` but not `/#` or `/$`.
 	Normal,
+	/// A special entry: path starts with `/#` or `/$`.
 	Special,
+	/// An internal metadata entry: path does not start with `/`.
 	Meta,
 }
 
+/// A single entry in a CHM archive's directory.
 #[derive(Debug, Clone)]
 pub struct Entry {
+	/// The entry's path within the archive, as stored in the directory.
 	pub path: String,
+	/// The entry's uncompressed length in bytes.
 	pub length: u64,
 	pub(crate) start: u64,
 	pub(crate) space: u8,
+	/// Whether this entry is a file or a directory.
 	pub kind: EntryKind,
+	/// Which part of the namespace this entry belongs to.
 	pub category: EntryCategory,
 }
 

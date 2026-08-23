@@ -29,7 +29,7 @@ fn main() -> libchm::Result<()> {
 
 ## Bindings
 
-- [pychmrs](https://github.com/joshuashaffer/pychmrs) — Python wrapper
+- [pychmrs](https://github.com/joshuashaffer/pychmrs): Python wrapper
 
 ## License
 

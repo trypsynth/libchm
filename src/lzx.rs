@@ -475,10 +475,10 @@ impl<'a> Bits<'a> {
 }
 
 // Remaining casts are bounded by construction:
-//   - sym < nsyms ≤ LZX_MAINTREE_MAXSYMBOLS (656) — fits in u16
-//   - next_symbol < table.len() / 2 (guarded by the ns2+1 check) — fits in u16
-//   - pos/table_mask ≤ 1<<nbits ≤ 1<<16 — fits in u32
-//   - bit_mask ≤ 1<<15 — fits in u32
+//   - sym < nsyms <= LZX_MAINTREE_MAXSYMBOLS (656), fits in u16
+//   - next_symbol < table.len() / 2 (guarded by the ns2+1 check), fits in u16
+//   - pos/table_mask <= 1<<nbits <= 1<<16, fits in u32
+//   - bit_mask <= 1<<15, fits in u32
 #[allow(clippy::cast_possible_truncation)]
 fn make_decode_table(nsyms: usize, nbits: usize, lengths: &[u8], table: &mut [u16]) -> Result<(), LzxError> {
 	let table_mask = 1usize << nbits;
