@@ -1,6 +1,6 @@
 [package]
 name = "libchm"
-version = "0.2.0"
+version = "0.3.0"
 description = "Pure-Rust reader for CHM (Compiled HTML Help) archives, with LZX decompression."
 edition = "2024"
 rust-version = "1.87"
