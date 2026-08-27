@@ -1,13 +1,32 @@
 [package]
 name = "libchm"
 version = "0.2.0"
-description = "Pure-Rust CHM file reader."
+description = "Pure-Rust reader for CHM (Compiled HTML Help) archives, with LZX decompression."
 edition = "2024"
+rust-version = "1.87"
 license = "MIT"
+readme = "README.md"
 repository = "https://github.com/trypsynth/libchm"
-keywords = ["chm", "parser", "lzx", "ebook"]
-categories = ["parser-implementations"]
+homepage = "https://github.com/trypsynth/libchm"
+documentation = "https://docs.rs/libchm"
+keywords = ["chm", "htmlhelp", "lzx", "ebook", "parser"]
+categories = ["parser-implementations", "compression", "filesystem"]
+exclude = [".claude/", "prek.toml", "rustfmt.toml"]
 
 [dependencies]
 bitflags = "2.13.1"
 thiserror = "2.0.20"
+
+[lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

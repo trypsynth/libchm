@@ -12,14 +12,39 @@
 //! for entry in chm.entries(EntrySel::ALL)? {
 //!     println!("{}", entry.path);
 //! }
-//! let entry = chm.find("/index.html")?;
-//! let bytes = chm.read(&entry)?;
+//! let bytes = chm.read_path("/index.html")?;
 //! println!("index size: {}", bytes.len());
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! # Paths
+//!
+//! Entry paths are absolute within the archive and matched case-insensitively, so
+//! `/Index.html` and `/index.html` name the same entry. Directory entries end with `/`.
+//!
+//! # Selecting entries
+//!
+//! [`EntrySel`] filters enumeration by namespace category (`NORMAL`, `SPECIAL`, `META`)
+//! and by kind (`FILES`, `DIRS`). An entry matches only if the selector names both its
+//! category and its kind, so use [`EntrySel::ALL`] for everything, or combine flags:
+//!
+//! ```no_run
+//! # use libchm::{ChmFile, EntrySel};
+//! # fn main() -> libchm::Result<()> {
+//! # let mut chm = ChmFile::open("docs.chm")?;
+//! // Ordinary content files, skipping directories and CHM-internal metadata.
+//! let pages = chm.entries(EntrySel::NORMAL | EntrySel::FILES)?;
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! # Robustness
+//!
+//! Archives are untrusted input. Every header field that feeds an allocation, an index,
+//! or a divisor is validated before use, and malformed files are reported as a
+//! [`ChmError`] rather than causing a panic.
 
-#![warn(clippy::all, clippy::cargo, clippy::nursery, clippy::pedantic)]
 #![warn(missing_docs)]
 
 mod chm;
